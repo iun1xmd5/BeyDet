@@ -1,0 +1,28 @@
+# Dataset — never commit CERT raw logs
+data/raw/
+data/processed/
+*.csv
+
+# Model weights (use Git LFS or releases)
+outputs/models/*.pt
+outputs/models/*.pkl
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+venv/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
