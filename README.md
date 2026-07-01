@@ -1,43 +1,82 @@
-# Beyond Detection: Proactive Insider Threat Risk Forecasting
+# InsiderLSTM
 
-[![Python 3.10](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/)
-[![PyTorch 2.4](https://img.shields.io/badge/PyTorch-2.4-orange.svg)](https://pytorch.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CERT r4.2](https://img.shields.io/badge/Dataset-CERT%20r4.2-green.svg)](https://doi.org/10.1184/R1/12841247.v1)
+Code for the paper **"Beyond Detection: A Proactive Insider Threat Risk
+Forecasting using LSTM-Based Temporal Behavioural Modelling and Early-Warning
+Lead Time Evaluation."**
 
-## Overview
-Proactive Insider Threat prediction using LSTM-based temporal Behaviour modelling with Early-Warning Lead Time (EWLT) evaluation.
+InsiderLSTM is a unidirectional LSTM with per-feature input gating and highway
+state refinement, trained on daily-aggregated user behaviour sequences (42
+features: 21 raw counts + 21 rolling z-score deviations) over a 14-day causal
+window. Alongside standard classification metrics it reports **Early-Warning
+Lead Time (EWLT)** — the number of days before the first confirmed malicious
+event at which the model raises a sustained above-threshold risk signal.
 
-**Key Results:**
-| Metric        | LSTM   | Random Forest | Logistic Regression |     ofa       |   Other method      | 
-|---------------|--------|---------------|---------------------|---------------|---------------------| 
-| AUC-ROC       | 0.937  | 0.983         | 0.938               | 0.983         | 0.938               |
-| Precision     | 0.135  | 0.079         | 0.027               | 0.983         | 0.938               |
-| F1-Score      | 0.217  | 0.144         | 0.053               | 0.983         | 0.938               |
-| FPR           | 0.0111 | 0.0291        | 0.1046              | 0.983         | 0.938               |
-| **EWLT**      | **43 days** | N/A      | N/A                 | N/A           | N/A                 |
-|---------------|--------|---------------|---------------------|---------------|---------------------| 
-## Dataset
-CERT Insider Threat Test Dataset r4.2 is **not redistributable**.
-Request access at: https://doi.org/10.1184/R1/12841247.v1
-Place raw files in `data/raw/` following `data/README_data.md`.
+Evaluated on **CERT r4.2** and **SPEDIA** under scenario-stratified temporal
+splits: AUC-ROC 0.9761 / F1 0.759 / mean EWLT 8.3 days on CERT r4.2, and
+AUC-ROC 0.9805 / F1 0.968 / mean EWLT 2.0 days on SPEDIA.
 
-## Quick Start
-```bash
-git clone https://github.com/iun1xmd5/BeyDet.git
-cd BeyDet
-pip install -r requirements.txt
+## Repository layout
 
-# 1. Preprocess
-python src/preprocessing/feature_engineering.py
+    .
+    ├── README.md
+    ├── requirements.txt
+    ├── .gitignore
+    ├── src/
+    │   └── main.py         # full pipeline, converted from the notebook
+    ├── notebooks/
+    │   └── r4-2-and-spedia-final.ipynb   # original notebook (paths corrected)
+    └── data/
+        └── README.md       # dataset sources and expected layout
 
-# 2. Train LSTM
-python src/training/train_lstm.py --config configs/lstm_optimal.yaml
+## Setup
 
-# 3. Evaluate + Compute EWLT
-python src/evaluation/ewlt.py --model outputs/models/lstm_best.pt
+    python -m venv .venv && source .venv/bin/activate
+    pip install -r requirements.txt
 
-# 4. Run Bayesian HPO (optional)
-python src/training/bayesian_optimisation.py \
-       --config configs/lstm_search_space.yaml
+Experiments in the paper used Python 3.10, PyTorch 2.4, and dual NVIDIA T4 GPUs
+on Kaggle. A CUDA GPU is strongly recommended; the code falls back to CPU.
 
+## Data
+
+The datasets are **not** included. See [`data/README.md`](data/README.md) for
+download links (CERT r4.2 from CMU KiltHub, SPEDIA from Zenodo) and the exact
+folder layout the code expects.
+
+## Running
+
+    python src/main.py
+
+`src/main.py` runs the full pipeline top to bottom: log loading and label
+construction, daily feature aggregation, rolling z-score features,
+scenario-stratified temporal splitting, 14-day sequence construction, model
+training with Bayesian hyperparameter optimisation, baseline/SOTA comparisons,
+EWLT analysis, statistical significance tests, and the ablation study.
+
+Paths resolve automatically for Kaggle, Colab, or a local run. For a local run
+with data stored outside the repo:
+
+    DATA_DIR=/path/to/data python src/main.py
+
+Generated artifacts (parquet, json, csv, figures, `.pth` checkpoints) are
+written to `./outputs` by default; override with `WORK_DIR`. Sections that
+reload artifacts from a previous run read from `RELOAD_DIR` (defaults to
+`WORK_DIR`).
+
+## Notebook vs. script
+
+`src/main.py` and `notebooks/r4-2-and-spedia-final.ipynb` contain the same
+pipeline. The notebook is kept for interactive/Kaggle use; the script is the
+convenient entry point for a plain `python` run. Both share the identical
+corrected path-resolution block.
+
+## Citation
+
+    @article{ndewingia_insiderlstm,
+      title   = {Beyond Detection: A Proactive Insider Threat Risk Forecasting
+                 using LSTM-Based Temporal Behavioural Modelling and
+                 Early-Warning Lead Time Evaluation},
+      author  = {Ndewingia, Hillary Gabriel and others},
+      year    = {2026}
+    }
+
+Update the citation block with the final author list and venue once available.
